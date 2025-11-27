@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>QuickBrew Café — Cart</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+</head>
+<body>
+
+<header class="py-2">
+  <div class="container d-flex align-items-center gap-3">
+    <h1 class="h4 mb-0">Your Cart</h1>
+    <nav class="ms-auto">
+      <a href="menu.html" class="btn btn-outline-light btn-sm">Back to Menu</a>
+      <span id="cart-badge" class="badge bg-warning text-dark ms-2">0</span>
+    </nav>
+  </div>
+</header>
+
+<main class="container py-3">
+  <div id="cartContainer"></div>
+
+  <div class="total-row">
+    <span>Total:</span> 
+    <span id="totalPrice">₱0.00</span>
+  </div>
+
+  <button class="proceed-btn" onclick="openPayment()">Proceed to Payment</button>
+</main>
+
+<div class="modal fade" id="paymentModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content p-3">
+      <h4 class="text-center mb-3">Confirm Payment</h4>
+      <p class="text-center">Do you want to pay for your order?</p>
+      <div class="d-flex justify-content-between mt-3">
+        <button class="btn btn-secondary w-50 me-2" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-success w-50 ms-2" onclick="confirmPayment()">Pay Now</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+function renderCart(){
+  const container = document.getElementById('cartContainer');
+  container.innerHTML = '';
+
+  if(cart.length === 0){
+    container.innerHTML = '<div class="empty-cart">Your cart is empty.</div>';
+    return;
+  }
+
+  cart.forEach(item=>{
+    const card = document.createElement('div');
+    card.className='cart-card show';
+    card.innerHTML = `
+      <img src="${item.image}" alt="${item.name}">
+      <div><strong>${item.name}</strong><br>₱${item.price.toFixed(2)}</div>
+      <div class="quantity-controls">
+        <button onclick="updateQty(${item.id}, -1)">-</button>
+        <span>${item.qty}</span>
+        <button onclick="updateQty(${item.id}, 1)">+</button>
+      </div>`;
+    container.appendChild(card);
+  });
+
+  updateTotal();
+  updateBadge();
+}
+
+function updateQty(id, change){
+  const idx = cart.findIndex(c=>c.id===id);
+  if(idx > -1){
+    cart[idx].qty += change;
+    if(cart[idx].qty <= 0) cart.splice(idx,1);
+    localStorage.setItem('cart', JSON.stringify(cart));
+    renderCart();
+  }
+}
+
+function updateTotal(){
+  const total = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+  document.getElementById('totalPrice').textContent = '₱' + total.toFixed(2);
+}
+
+function updateBadge(){
+  const b = document.getElementById('cart-badge');
+  const totalQty = cart.reduce((s,i)=>s+i.qty,0);
+  b.style.display = totalQty>0 ? 'inline-block' : 'none';
+  b.textContent = totalQty;
+}
+
+function openPayment(){
+  if(cart.length === 0){
+    alert("Your cart is empty. Add items first.");
+    return;
+  }
+  let modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+  modal.show();
+}
+
+function confirmPayment(){
+  cart = [];
+  localStorage.setItem("cart", JSON.stringify(cart));
+
+  let modalEl = document.getElementById('paymentModal');
+  let modal = bootstrap.Modal.getInstance(modalEl);
+  modal.hide();
+
+  alert("Payment successful! Thank you for your purchase.");
+
+  renderCart();
+  updateBadge();
+}
+
+document.addEventListener('DOMContentLoaded', renderCart);
+</script>
+
+</body>
+</html>
